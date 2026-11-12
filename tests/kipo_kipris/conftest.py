@@ -7,10 +7,8 @@ items), so this connector ships with **synthesized XML fixtures**
 under ``tests/kipo_kipris/fixtures/`` and ``httpx2.MockTransport`` —
 no VCR cassettes are recorded for KIPRIS in v1.
 
-If/when a live ``serviceKey`` is acquired and live cassettes get
-recorded, the root conftest's VCR ``filter_query_parameters`` list
-must be extended with ``("serviceKey", "REDACTED")`` so the key is
-scrubbed from every cassette before it lands on disk.
+The root conftest's VCR ``filter_query_parameters`` list scrubs
+``serviceKey`` from any recorded cassette before it lands on disk.
 
 Provided fixtures:
 

@@ -408,6 +408,7 @@ def _create_vcr() -> vcr.VCR:
         filter_query_parameters=[
             ("api_key", "REDACTED"),
             ("apiKey", "REDACTED"),
+            ("serviceKey", "REDACTED"),
             ("tk", "REDACTED"),
         ],
         before_record_request=_chain_request_scrubbers(

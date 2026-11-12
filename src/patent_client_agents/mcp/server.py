@@ -4,16 +4,17 @@ Run via the ``patent-client-agents-mcp`` console script (installed by the ``[mcp
 extra of the ``patent-client-agents`` distribution), or directly::
 
     python -m patent_client_agents.mcp.server
-    fastmcp run patent_client_agents.mcp.server:mcp
 
-Stdio is the default transport. Pass ``--transport http`` (or use
-``fastmcp run``) for HTTP mode.
+Stdio is the default transport. Use ``--transport http`` for HTTP mode;
+HTTP mode requires authentication to be configured.
 
 Auth is env-driven via ``mcp_data_core.mcp.auth.make_auth``. For stdio
 and local development, leave the auth env vars unset and the server
 runs without authentication. For HTTP deployments, set
 ``LAW_TOOLS_CORE_PUBLIC_URL`` plus the Google OAuth or static bearer
-env vars described in :mod:`mcp_data_core.mcp.auth`.
+env vars described in :mod:`mcp_data_core.mcp.auth`. The command-line
+entry point refuses to start HTTP mode unless ``make_auth()`` returns
+an authentication provider.
 
 Hosted/multi-instance deployments that need persistent OAuth/DCR
 client state (Firestore-backed storage, rate limiting, etc.) belong in
@@ -44,6 +45,7 @@ except ModuleNotFoundError as exc:
     _mcp_import_error = exc
     mcp = None
 else:
+    _auth = make_auth()
     mcp = build_server(
         name="patent-client-agents",
         instructions=(
@@ -53,7 +55,7 @@ else:
             "(Canadian courts, tribunals, and IP statutes), and WIPO Lex "
             "(global IP statute / treaty / judgment database)."
         ),
-        auth=make_auth(),
+        auth=_auth,
     )
     mcp.mount(ip_mcp)
 
@@ -67,7 +69,7 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="patent-client-agents-mcp",
         description=(
-            "Run the patent-client-agents MCP server on stdio. Exposes 136 "
+            "Run the patent-client-agents MCP server. Exposes 136 "
             "default patent/IP tools to any MCP client; local/private deployments "
             "expose up to 234 tools when every env-gated family is configured. "
             "See docs/installation.md for client configuration."
@@ -78,15 +80,26 @@ def main(argv: list[str] | None = None) -> None:
         action="version",
         version=f"patent-client-agents {__version__}",
     )
-    parser.parse_args(argv)
+    parser.add_argument(
+        "--transport",
+        choices=("stdio", "http"),
+        default="stdio",
+        help="MCP transport (HTTP requires authentication; default: stdio)",
+    )
+    args = parser.parse_args(argv)
     if _mcp_import_error is not None:
         raise SystemExit(
             "patent-client-agents-mcp requires the optional MCP dependencies. "
             "Install with: pip install 'patent-client-agents[mcp]'"
         ) from _mcp_import_error
+    if args.transport == "http" and _auth is None:
+        parser.error(
+            "HTTP transport requires authentication. Set LAW_TOOLS_CORE_PUBLIC_URL "
+            "and configure Google OAuth or static bearer credentials."
+        )
     try:
         assert mcp is not None
-        mcp.run()
+        mcp.run(transport=args.transport)
     except KeyboardInterrupt:
         sys.exit(0)
 
