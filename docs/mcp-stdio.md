@@ -24,12 +24,22 @@ patent-client-agents-mcp                  # default: stdio transport, no auth
 ```
 
 `patent-client-agents-mcp` is a thin wrapper around `patent_client_agents.mcp.server:mcp` that
-runs via fastmcp. You can also invoke it directly:
+runs via FastMCP. You can also invoke it directly:
 
 ```bash
 python -m patent_client_agents.mcp.server
-fastmcp run patent_client_agents.mcp.server:mcp
 ```
+
+HTTP transport is available through the same entry point:
+
+```bash
+patent-client-agents-mcp --transport http
+```
+
+HTTP startup fails unless authentication is configured. Set
+`LAW_TOOLS_CORE_PUBLIC_URL` and the Google OAuth or static bearer
+environment variables described in `mcp_data_core.mcp.auth`. Do not
+launch the server with an alternate runner that bypasses this check.
 
 ## MCP client configuration
 
